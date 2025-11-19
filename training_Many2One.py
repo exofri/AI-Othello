@@ -2,8 +2,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from data import CustomDatasetMany
-from utile import BOARD_SIZE
+from utile import BOARD_SIZE, commit_and_push
 from networks_00000 import LSTMs
+
 
 
 if torch.cuda.is_available():
@@ -69,4 +70,7 @@ best_epoch=model.train_all(trainSet,
 # train_clas_rep=model.evalulate(trainSet, device)
 # acc_train=train_clas_rep["weighted avg"]["recall"]
 # print(f"Accuracy Train:{round(100*acc_train,2)}%")
+
+commit_and_push()
+print("successfuly commited!")
 

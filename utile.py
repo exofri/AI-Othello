@@ -1,4 +1,22 @@
 import numpy as np
+import subprocess
+import time
+import datetime
+
+def commit_and_push():
+    t = time.localtime()
+    current_time = time.strftime(" %H:%M:%S", t)
+    today = datetime.date.today()
+    # dd/mm/YY
+    today_date = today.strftime('%Y-%m-%d')
+    
+    print("Commit + Push sur GitHub...")
+    subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"])
+    subprocess.run(["git", "config", "--global", "user.name", "GitHub Actions"])
+    subprocess.run(["git", "add", "."])
+    subprocess.run(["git", "commit", "-m", f"Update files {today_date+current_time}"])
+    subprocess.run(["git", "push"])
+    print("TOUT PUSHÉ SUR GIT !")
 
 BOARD_SIZE=8
 
