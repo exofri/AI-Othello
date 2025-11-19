@@ -35,6 +35,8 @@ jobs:
       - name: Run training
         run: |
           python training_One2One.py
+          python training_Many2One.py
+          python game.py save_models/LSTM_best_epoch.pt save_models/MLP_best_epoch.pt
 
       - name: Upload model artifact
         uses: actions/upload-artifact@v4

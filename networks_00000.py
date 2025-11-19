@@ -25,7 +25,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()  
         
         self.board_size=conf["board_size"]
-        self.path_save=conf["path_save"]+"_MLP/"
+        self.path_save=conf["path_save"]
         self.earlyStopping=conf["earlyStopping"]
         self.len_inpout_seq=conf["len_inpout_seq"]
 
@@ -101,7 +101,8 @@ class MLP(nn.Module):
             if acc_dev > best_dev or best_dev == 0.0:
                 notchange=0
                 
-                torch.save(self, self.path_save + '/model_' + str(epoch) + '.pt')
+                # torch.save(self, self.path_save + '/MLP_model_' + str(epoch) + '.pt')
+                torch.save(self, self.path_save + '/MLP_best_epoch.pt')
                 best_dev = acc_dev
                 best_epoch = epoch
             else:
@@ -113,7 +114,7 @@ class MLP(nn.Module):
             
             print("*"*15,f"The best score on DEV {best_epoch} :{round(100*best_dev,3)}%")
 
-        self = torch.load(self.path_save + '/model_' + str(best_epoch) + '.pt',weights_only=False)
+        self = torch.load(self.path_save + '/MLP_best_epoch.pt',weights_only=False)
         self.eval()
         _clas_rep = self.evalulate(dev, device)
         print(f"Recalculing the best DEV: WAcc : {100*_clas_rep['weighted avg']['recall']}%")
@@ -157,7 +158,7 @@ class LSTMs(nn.Module):
         super(LSTMs, self).__init__()
         
         self.board_size=conf["board_size"]
-        self.path_save=conf["path_save"]+"/LSTM"
+        self.path_save=conf["path_save"]
         self.earlyStopping=conf["earlyStopping"]
         self.len_inpout_seq=conf["len_inpout_seq"]
         self.hidden_dim = conf["LSTM_conf"]["hidden_dim"]
@@ -253,7 +254,7 @@ class LSTMs(nn.Module):
             if acc_dev > best_dev or best_dev == 0.0:
                 notchange=0
                 
-                torch.save(self, self.path_save + '/model_' + str(epoch) + '.pt')
+                torch.save(self, self.path_save + '/LSTM_best_epoch.pt')
                 best_dev = acc_dev
                 best_epoch = epoch
             else:
@@ -265,7 +266,7 @@ class LSTMs(nn.Module):
             
             print("*"*15,f"The best score on DEV {best_epoch} :{round(100*best_dev,3)}%")
 
-        self = torch.load(self.path_save + '/model_' + str(best_epoch) + '.pt',weights_only=False)
+        self = torch.load(self.path_save + '/LSTM_best_epoch.pt',weights_only=False)
         self.eval()
         _clas_rep = self.evalulate(dev, device)
         print(f"Recalculing the best DEV: WAcc : {100*_clas_rep['weighted avg']['recall']}%")
