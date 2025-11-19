@@ -114,7 +114,8 @@ class MLP(nn.Module):
             
             print("*"*15,f"The best score on DEV {best_epoch} :{round(100*best_dev,3)}%")
 
-        self = torch.load(self.path_save + '/MLP_best_epoch.pt',weights_only=False)
+        # self = torch.load(self.path_save + '/MLP_best_epoch.pt',weights_only=False)
+        self = torch.load(self.path_save + '/MLP_best_epoch.pt')
         self.eval()
         _clas_rep = self.evalulate(dev, device)
         print(f"Recalculing the best DEV: WAcc : {100*_clas_rep['weighted avg']['recall']}%")
@@ -266,7 +267,8 @@ class LSTMs(nn.Module):
             
             print("*"*15,f"The best score on DEV {best_epoch} :{round(100*best_dev,3)}%")
 
-        self = torch.load(self.path_save + '/LSTM_best_epoch.pt',weights_only=False)
+        # self = torch.load(self.path_save + '/LSTM_best_epoch.pt',weights_only=False)
+        self = torch.load(self.path_save + '/LSTM_best_epoch.pt')
         self.eval()
         _clas_rep = self.evalulate(dev, device)
         print(f"Recalculing the best DEV: WAcc : {100*_clas_rep['weighted avg']['recall']}%")
