@@ -115,9 +115,11 @@ for g in [0,1]:
         NgBlackPsWhith=-1
         board_stats_seq.append(copy.copy(board_stat))
         if torch.cuda.is_available():
-            model = torch.load(conf['player1'],weights_only=False)
+            # model = torch.load(conf['player1'],weights_only=False)
+            model = torch.load(conf['player1'])
         else:
-            model = torch.load(conf['player1'],map_location=torch.device('cpu'),weights_only=False)
+            # model = torch.load(conf['player1'],map_location=torch.device('cpu'),weights_only=False)
+            model = torch.load(conf['player1'],map_location=torch.device('cpu'))
         model.eval()
 
         input_seq_boards=input_seq_generator(board_stats_seq,model.len_inpout_seq)
@@ -148,9 +150,11 @@ for g in [0,1]:
         NgBlackPsWhith=+1
         board_stats_seq.append(copy.copy(board_stat))
         if torch.cuda.is_available():
-            model = torch.load(conf['player2'],weights_only=False)
+            # model = torch.load(conf['player2'],weights_only=False)
+            model = torch.load(conf['player2'])
         else:
-            model = torch.load(conf['player2'],map_location=torch.device('cpu'),weights_only=False)
+            # model = torch.load(conf['player2'],map_location=torch.device('cpu'),weights_only=False)
+            model = torch.load(conf['player2'],map_location=torch.device('cpu'))
         model.eval()
 
         input_seq_boards=input_seq_generator(board_stats_seq,model.len_inpout_seq)

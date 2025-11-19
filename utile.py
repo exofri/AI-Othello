@@ -16,7 +16,6 @@ def commit_and_push():
     subprocess.run(["git", "add", "."])
     subprocess.run(["git", "commit", "-m", f"Update files {today_date+current_time}"])
     subprocess.run(["git", "push"])
-    print("TOUT PUSHÉ SUR GIT !")
 
 BOARD_SIZE=8
 
