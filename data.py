@@ -1,0 +1,226 @@
+import h5py
+import numpy as np
+from tqdm import tqdm
+import copy
+from utile import has_tile_to_flip,isBlackWinner,initialze_board,BOARD_SIZE
+from torch.utils.data import Dataset
+import os
+import pickle
+
+# Method to load the game log from an HDF5 file
+def load_game_log(file_path):
+    # file_path: path to the HDF5 file containing the game log
+    h5f = h5py.File(file_path, 'r')  # Open the HDF5 file in read mode
+    game_name = file_path.split('/')[-1].replace(".h5", "")  # Extract the game name from the file path
+    game_log = np.array(h5f[game_name][:])  # Read the game log data as a NumPy array
+    h5f.close()  # Close the HDF5 file
+    return game_log  # Return the loaded game log
+
+
+class SampleManager():
+    def __init__(self,
+                 game_name,
+                 file_dir,
+                 end_move,
+                 len_moves,
+                 isBlackPlayer):
+        
+        ''' each sample is a sequence of board states 
+        from index (end_move - len_moves) to inedx end_move
+        
+        file_dir : directory of dataset
+        game_name: name of file (game)
+        end_move : the index of last recent move 
+        len_moves: length of sequence
+        isBlackPlayer: register the turn : True if it is a move of black player
+        	(if black is the current player the board should be multiplay by -1)
+        '''
+        
+        self.file_dir=file_dir
+        self.game_name=game_name
+        self.end_move=end_move
+        self.len_moves=len_moves
+        self.isBlackPlayer=isBlackPlayer
+    
+    def set_file_dir(file_dir):
+        self.file_dir=file_dir
+    def set_game_name(game_name):
+        self.game_name=game_name
+    def set_end_move(end_move):
+        self.end_move=end_move
+    def set_len_moves(len_moves):
+        self.len_moves=len_moves
+
+class CustomDatasetMany(Dataset):
+    def __init__(self,
+                 dataset_conf,load_data_once4all=True):
+        """
+        Custom dataset class for Othello game.
+
+        Parameters:
+        - dataset_conf (dict): Configuration dictionary containing dataset parameters.
+        - load_data_once4all (bool): Flag indicating whether to load all data at once.
+        """
+                 
+        self.load_data_once4all=load_data_once4all
+        
+        self.starting_board_stat=initialze_board()
+        
+        # self.filelist : a list of all games for train/dev/test
+        self.filelist=dataset_conf["filelist"]
+        #len_samples is 1 for one2one but it can be more than 1 for seq2one modeling
+        self.len_samples=dataset_conf["len_samples"] 
+        self.path_dataset = dataset_conf["path_dataset"]
+        
+        #read all file name from train/dev/test.txt files
+        with open(self.filelist) as f:
+            list_files = [line.rstrip() for line in f]
+        self.game_files_name=list_files#[s + ".h5" for s in list_files]
+
+        if os.path.isfile(self.path_dataset) and self.path_dataset.endswith(".npz"):
+            self.loaded_log_games = np.load(self.path_dataset)
+        elif os.path.isdir(self.path_dataset):
+            self.loaded_log_games = None
+        else:
+            print(f"{self.path_dataset} is not valid file or path!")
+        
+        self.samples=np.zeros((len(self.game_files_name)*30,self.len_samples,8,8), dtype=int)
+        self.outputs=np.zeros((len(self.game_files_name)*30,8*8), dtype=int)
+        idx=0
+        for gm_idx,gm_name in tqdm(enumerate(self.game_files_name)):
+            
+            if self.loaded_log_games is not None:
+                if gm_name.replace(".h5", "") in self.loaded_log_games:
+                    game_log=self.loaded_log_games[gm_name.replace(".h5", "")]
+                else:
+                    continue
+            else:
+                game_log=load_game_log(self.path_dataset+gm_name)
+            last_board_state=copy.copy(game_log[0][-1])
+            is_black_winner=isBlackWinner(game_log[1][-1],last_board_state)
+            for sm_idx in range(30):
+                if is_black_winner:
+                    end_move=2*sm_idx
+                else:
+                    end_move=2*sm_idx+1
+                    
+                if end_move+1 >= self.len_samples:
+                    features=game_log[0][end_move-self.len_samples+1:
+                                            end_move+1]
+                else:
+                    features=[self.starting_board_stat]
+                    #Padding starting board state before first index of sequence
+                    for i in range(self.len_samples-end_move-2):
+                        features.append(self.starting_board_stat)
+                    #adding the inital of game as the end of sequence sample
+                    for i in range(end_move+1):
+                        features.append(game_log[0][i])
+
+                #if black is the current player the board should be multiplay by -1    
+                if is_black_winner:       
+                    features=np.array([features],dtype=int)*-1
+                else:
+                    features=np.array([features],dtype=int)    
+                    
+                self.samples[idx]=features
+                self.outputs[idx]=np.array(game_log[1][end_move]).flatten()
+                idx+=1
+        
+        #np.random.shuffle(self.samples)
+        print(f"Number of samples : {len(self.samples)}")
+        
+    def __len__(self):
+        return len(self.samples)
+    
+    def __getitem__(self, idx):
+        
+        return self.samples[idx],self.outputs[idx],self.len_samples
+    
+
+class CustomDatasetOne(Dataset):
+    def __init__(self,
+                 dataset_conf,load_data_once4all=True):
+        """
+        Custom dataset class for Othello game.
+
+        Parameters:
+        - dataset_conf (dict): Configuration dictionary containing dataset parameters.
+        - load_data_once4all (bool): Flag indicating whether to load all data at once.
+        """
+                 
+        self.load_data_once4all=load_data_once4all
+        
+        self.starting_board_stat=initialze_board()
+        
+        # self.filelist : a list of all games for train/dev/test
+        self.filelist=dataset_conf["filelist"]
+        #len_samples is 1 for one2one but it can be more than 1 for seq2one modeling
+        self.len_samples=dataset_conf["len_samples"] 
+        self.path_dataset = dataset_conf["path_dataset"]
+        
+        #read all file name from train/dev/test.txt files
+        with open(self.filelist) as f:
+            list_files = [line.rstrip() for line in f]
+        self.game_files_name=list_files#[s + ".h5" for s in list_files]
+
+        if os.path.isfile(self.path_dataset) and self.path_dataset.endswith(".npz"):
+            self.loaded_log_games = np.load(self.path_dataset)
+        elif os.path.isdir(self.path_dataset):
+            self.loaded_log_games = None
+        else:
+            print(f"{self.path_dataset} is not valid file or path!")
+
+        # import pdb; pdb.set_trace()  
+        
+        self.samples=np.zeros((len(self.game_files_name)*30,self.len_samples,8,8), dtype=int)
+        self.outputs=np.zeros((len(self.game_files_name)*30,8*8), dtype=int)
+        idx=0
+        for gm_idx,gm_name in tqdm(enumerate(self.game_files_name)):
+            if self.loaded_log_games is not None:
+                if gm_name.replace(".h5", "") in self.loaded_log_games:
+                    game_log=self.loaded_log_games[gm_name.replace(".h5", "")]
+                else:
+                    continue
+            else:
+                game_log=load_game_log(self.path_dataset+gm_name)
+            last_board_state=copy.copy(game_log[0][-1])
+            is_black_winner=isBlackWinner(game_log[1][-1],last_board_state)
+            for sm_idx in range(30):
+                if is_black_winner:
+                    end_move=2*sm_idx
+                else:
+                    end_move=2*sm_idx+1
+                    
+                if end_move+1 >= self.len_samples:
+                    features=game_log[0][end_move-self.len_samples+1:
+                                            end_move+1]
+                else:
+                    features=[self.starting_board_stat]
+                    #Padding starting board state before first index of sequence
+                    for i in range(self.len_samples-end_move-2):
+                        features.append(self.starting_board_stat)
+                    #adding the inital of game as the end of sequence sample
+                    for i in range(end_move+1):
+                        features.append(game_log[0][i])
+
+                #if black is the current player the board should be multiplay by -1    
+                if is_black_winner:       
+                    features=np.array([features],dtype=int)*-1
+                else:
+                    features=np.array([features],dtype=int)    
+                    
+                self.samples[idx]=features
+                self.outputs[idx]=np.array(game_log[1][end_move]).flatten()
+                idx+=1
+        
+        print(f"Number of samples : {len(self.samples)}")
+        
+    def __len__(self):
+        return len(self.samples)
+    
+    def __getitem__(self, idx):
+            
+        return self.samples[idx],self.outputs[idx],self.len_samples
+
+    
+
