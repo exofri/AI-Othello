@@ -157,7 +157,7 @@ class LSTMs(nn.Module):
         super(LSTMs, self).__init__()
         
         self.board_size=conf["board_size"]
-        self.path_save=conf["path_save"]+"_LSTM/"
+        self.path_save=conf["path_save"]+"/LSTM"
         self.earlyStopping=conf["earlyStopping"]
         self.len_inpout_seq=conf["len_inpout_seq"]
         self.hidden_dim = conf["LSTM_conf"]["hidden_dim"]
